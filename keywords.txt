@@ -1,0 +1,60 @@
+# Core terms
+gun
+guns
+firearm
+firearms
+ammunition
+ammo
+magazine capacity
+
+# Carry & possession
+concealed carry
+open carry
+permitless carry
+constitutional carry
+carry permit
+
+# Regulation & licensing
+FFL
+federal firearms license
+background check
+waiting period
+red flag
+extreme risk protection order
+straw purchase
+universal background check
+
+# Specific weapon categories
+assault weapon
+assault rifle
+semi-automatic
+handgun
+rifle
+shotgun
+NFA
+National Firearms Act
+ghost gun
+3D printed firearm
+untraceable firearm
+
+# Ownership & storage
+gun owner
+safe storage
+child access prevention
+gun lock
+gun safe
+
+# Sales & commerce
+gun show
+gun dealer
+ammunition sales
+online firearm sales
+
+# Places/restrictions
+gun-free zone
+campus carry
+firearm in vehicle
+
+# Doctrine/legal terms
+castle doctrine
+stand your ground
