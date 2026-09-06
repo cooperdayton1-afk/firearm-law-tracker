@@ -1,0 +1,41 @@
+name: Colorado Backstop Search
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # 12pm Denver time (MDT, UTC-6)
+    - cron: '0 2 * * *'   # 8pm Denver time (MDT, UTC-6)
+  workflow_dispatch:
+
+jobs:
+  backstop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: pip install requests python-dotenv supabase
+
+      - name: Run backstop search
+        env:
+          LEGISCAN_API_KEY: ${{ secrets.LEGISCAN_API_KEY }}
+        run: python scripts/search_backstop.py
+
+      - name: Upload backstop results
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/upload_backstop_to_supabase.py
+
+      - name: Commit updated backstop cache
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "Update backstop cache [automated]"
+          git push
