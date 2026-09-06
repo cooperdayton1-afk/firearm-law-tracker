@@ -2,8 +2,12 @@ name: Daily Colorado Sync
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # ~7am Denver time (MDT, UTC-6)
+    - cron: '0 18 * * *'  # 12pm Denver time (MDT, UTC-6)
+    - cron: '0 2 * * *'   # 8pm Denver time (MDT, UTC-6)
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   sync:
