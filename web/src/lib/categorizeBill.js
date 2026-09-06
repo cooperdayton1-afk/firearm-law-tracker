@@ -1,4 +1,4 @@
-import { KEYWORD_CATEGORIES } from '../data/keywordCategories'
+import { KEYWORD_CATEGORIES } from '../data/keywordCategories.js'
 
 export function categorizeBill(matchedKeywords = []) {
   const lowerKeywords = matchedKeywords.map((k) => k.toLowerCase())
