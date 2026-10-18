@@ -1,10 +1,11 @@
 "use client";
 
 import { CATEGORIES } from "@/data/mockBills";
+import { POSITIONS } from "@/lib/billInfo";
 
 const LABEL = "font-data text-xs uppercase tracking-wide text-[#52616F] mb-2";
 
-export default function FilterPanel({ filters, setFilters, emptyFilters, years, statuses }) {
+export default function FilterPanel({ filters, setFilters, emptyFilters, years, statuses, showPositions }) {
   function toggle(key, value) {
     setFilters((prev) => {
       const has = prev[key].includes(value);
@@ -16,7 +17,11 @@ export default function FilterPanel({ filters, setFilters, emptyFilters, years, 
   }
 
   const hasActiveFilters =
-    filters.search || filters.year !== "all" || filters.categories.length || filters.statuses.length;
+    filters.search ||
+    filters.year !== "all" ||
+    filters.categories.length ||
+    filters.statuses.length ||
+    filters.positions.length;
 
   function yearButton(value, label) {
     const active = filters.year === value;
@@ -63,6 +68,25 @@ export default function FilterPanel({ filters, setFilters, emptyFilters, years, 
         placeholder="Bill number or keyword"
         className="w-full border border-[#C9C2B2] bg-white px-3 py-2 mb-5 text-sm text-[#1C2B3A] focus:outline-none focus:ring-2 focus:ring-[#9C7A29]"
       />
+
+      {showPositions && (
+        <>
+          <p className={LABEL}>Our position</p>
+          <div className="space-y-2 mb-5">
+            {[...POSITIONS, { value: "none", label: "No position yet" }].map((p) => (
+              <label key={p.value} className="flex items-center gap-2 text-sm text-[#1C2B3A] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.positions.includes(p.value)}
+                  onChange={() => toggle("positions", p.value)}
+                  className="accent-[#9C7A29]"
+                />
+                {p.label}
+              </label>
+            ))}
+          </div>
+        </>
+      )}
 
       <p className={LABEL}>Status</p>
       <div className="space-y-2 mb-5">

@@ -13,6 +13,17 @@ export function statusLabel(status) {
   return STATUS_LABELS[Number(status)] || String(status)
 }
 
+// Our organization's position on a watchlist bill
+export const POSITIONS = [
+  { value: 'support', label: 'Support', color: '#3F6B4F' },
+  { value: 'neutral', label: 'Neutral', color: '#52616F' },
+  { value: 'oppose', label: 'Oppose', color: '#8B3A3A' },
+]
+
+export function positionInfo(value) {
+  return POSITIONS.find((p) => p.value === value) || null
+}
+
 // The year a bill belongs to. Uses the legislative session name first
 // (e.g. "2026 Regular Session" -> 2026), then falls back to the last action date.
 export function billYear(bill) {
