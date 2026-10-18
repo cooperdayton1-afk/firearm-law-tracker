@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import BillCard from '../components/BillCard'
 import FilterPanel from '../components/FilterPanel'
 import { categorizeBill } from '../lib/categorizeBill'
-import { statusLabel, billYear } from '../lib/billInfo'
+import { statusLabel, billYear, decodeText } from '../lib/billInfo'
 
 const EMPTY_FILTERS = { search: '', year: 'all', categories: [], statuses: [], positions: [] }
 
@@ -21,10 +21,10 @@ function reshape(bill) {
   return {
     id: bill.id,
     billNumber: bill.bill_number,
-    title: bill.title,
-    description: bill.description,
+    title: decodeText(bill.title),
+    description: decodeText(bill.description),
     status: statusLabel(bill.status),
-    lastAction: bill.last_action,
+    lastAction: decodeText(bill.last_action),
     lastActionDate: bill.last_action_date,
     url: bill.url,
     year: billYear(bill),

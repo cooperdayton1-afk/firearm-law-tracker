@@ -32,3 +32,23 @@ export function billYear(bill) {
   if (bill.last_action_date) return Number(String(bill.last_action_date).slice(0, 4))
   return null
 }
+
+// LegiScan sends some text with HTML codes (e.g. "&amp;" instead of "&").
+// This turns them back into normal characters.
+const NAMED_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+
+export function decodeText(text) {
+  if (!text) return text
+  let out = String(text)
+  // Run twice to handle double-encoded text like "&amp;amp;"
+  for (let i = 0; i < 2; i++) {
+    out = out.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code) => {
+      if (code[0] === '#') {
+        const num = code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10)
+        return Number.isFinite(num) ? String.fromCodePoint(num) : match
+      }
+      return NAMED_ENTITIES[code.toLowerCase()] ?? match
+    })
+  }
+  return out
+}

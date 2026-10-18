@@ -166,6 +166,8 @@ function WatchlistEditor({ bill, onUpdate }) {
         {!open && missing && <span className="ml-2 normal-case text-[#9C7A29]">needs a position or summary</span>}
       </button>
 
+      {!open && <PublicDetails bill={bill} />}
+
       {open && (
         <div className="space-y-4">
           <AutoSaveField
