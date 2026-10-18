@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient'
 import BillCard from '../components/BillCard'
 import FilterPanel from '../components/FilterPanel'
 import { categorizeBill } from '../lib/categorizeBill'
-import { statusLabel, billYear, decodeText } from '../lib/billInfo'
+import { statusLabel, billYear, decodeText, billStage, STATUS_GROUPS } from '../lib/billInfo'
 
 const EMPTY_FILTERS = { search: '', year: 'all', categories: [], statuses: [], positions: [] }
 
@@ -16,14 +16,21 @@ const TABS = [
   { value: 'archived', label: 'Not Watching' },
 ]
 
-function reshape(bill) {
+function reshape(bill, sessions = {}) {
   const autoCategory = categorizeBill(bill.matched_keywords || [])
+  const status = statusLabel(bill.status)
+  const session = sessions.byId?.[bill.session_id] || sessions.byName?.[bill.session_name]
+  const sessionEnded = Boolean(session?.sine_die)
+  const stage = billStage(status, { sessionEnded, inCommittee: bill.in_committee })
   return {
     id: bill.id,
     billNumber: bill.bill_number,
     title: decodeText(bill.title),
     description: decodeText(bill.description),
-    status: statusLabel(bill.status),
+    status,
+    stage,
+    diedAtSessionEnd: stage === 'Failed' && status !== 'Failed',
+    committeeName: bill.committee_name,
     lastAction: decodeText(bill.last_action),
     lastActionDate: bill.last_action_date,
     url: bill.url,
@@ -59,6 +66,7 @@ export default function Home() {
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [tab, setTab] = useState('pending')
+  const [sessions, setSessions] = useState({})
 
   const isStaff = Boolean(session)
 
@@ -78,16 +86,27 @@ export default function Home() {
   // the public gets watchlist bills only, staff get everything.
   const fetchBills = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('bills')
-      .select('*')
-      .eq('state', 'CO')
-      .order('last_action_date', { ascending: false, nullsFirst: false })
+    const [billsResult, sessionsResult] = await Promise.all([
+      supabase
+        .from('bills')
+        .select('*')
+        .eq('state', 'CO')
+        .order('last_action_date', { ascending: false, nullsFirst: false }),
+      supabase.from('sessions').select('session_id, session_name, sine_die').eq('state', 'CO'),
+    ])
 
-    if (error) setError(error.message)
+    // Session info is a nice-to-have: if it can't load, bills still show
+    const sessionRows = sessionsResult.error ? [] : sessionsResult.data
+    const sessionMaps = {
+      byId: Object.fromEntries(sessionRows.map((r) => [r.session_id, r])),
+      byName: Object.fromEntries(sessionRows.map((r) => [r.session_name, r])),
+    }
+    setSessions(sessionMaps)
+
+    if (billsResult.error) setError(billsResult.error.message)
     else {
       setError(null)
-      setBills(data.map(reshape))
+      setBills(billsResult.data.map((b) => reshape(b, sessionMaps)))
     }
     setLoading(false)
   }, [])
@@ -123,9 +142,9 @@ export default function Home() {
       alert(`Could not save: ${error?.message || 'permission denied'}`)
       return false
     }
-    setBills((prev) => prev.map((b) => (b.id === id ? reshape(data[0]) : b)))
+    setBills((prev) => prev.map((b) => (b.id === id ? reshape(data[0], sessions) : b)))
     return true
-  }, [])
+  }, [sessions])
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -149,12 +168,15 @@ export default function Home() {
     () => [...new Set(tabBills.map((b) => b.year).filter(Boolean))].sort((a, b) => b - a),
     [tabBills]
   )
-  const statuses = useMemo(() => [...new Set(tabBills.map((b) => b.status))].sort(), [tabBills])
+  const statuses = useMemo(() => {
+    const present = new Set(tabBills.map((b) => b.stage))
+    return STATUS_GROUPS.map((g) => g.label).filter((label) => present.has(label))
+  }, [tabBills])
 
   const filteredBills = tabBills.filter((bill) => {
     if (filters.year !== 'all' && bill.year !== filters.year) return false
     if (filters.categories.length && !filters.categories.includes(bill.category)) return false
-    if (filters.statuses.length && !filters.statuses.includes(bill.status)) return false
+    if (filters.statuses.length && !filters.statuses.includes(bill.stage)) return false
     if (activeTab === 'watch' && filters.positions.length && !filters.positions.includes(bill.position || 'none'))
       return false
     if (filters.search) {
@@ -244,9 +266,30 @@ export default function Home() {
                 {filteredBills.length === 1 ? 'bill' : 'bills'}
               </p>
               {filteredBills.length === 0 && <p className="text-sm text-[#52616F]">{emptyMessage}</p>}
-              {filteredBills.map((bill) => (
-                <BillCard key={bill.id} bill={bill} isStaff={isStaff} onUpdate={updateBill} />
-              ))}
+              {activeTab === 'watch'
+                ? STATUS_GROUPS.map((group) => {
+                    const groupBills = filteredBills.filter((b) => b.stage === group.label)
+                    if (groupBills.length === 0) return null
+                    return (
+                      <section key={group.label} className="pt-4 first:pt-0">
+                        <div className="flex items-baseline justify-between gap-4 border-b-2 border-[#1C2B3A] pb-2 mb-4">
+                          <h2 className="font-display text-xl text-[#1C2B3A]">
+                            {group.label}{' '}
+                            <span className="font-data text-sm text-[#52616F]">({groupBills.length})</span>
+                          </h2>
+                          <p className="font-data text-xs text-[#52616F] text-right">{group.note}</p>
+                        </div>
+                        <div className="space-y-4">
+                          {groupBills.map((bill) => (
+                            <BillCard key={bill.id} bill={bill} isStaff={isStaff} onUpdate={updateBill} />
+                          ))}
+                        </div>
+                      </section>
+                    )
+                  })
+                : filteredBills.map((bill) => (
+                    <BillCard key={bill.id} bill={bill} isStaff={isStaff} onUpdate={updateBill} />
+                  ))}
             </div>
           </div>
         )}

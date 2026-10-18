@@ -6,9 +6,10 @@ import { POSITIONS, positionInfo } from "@/lib/billInfo";
 
 const STATUS_COLORS = {
   Introduced: "#52616F",
-  "Passed One Chamber": "#9C7A29",
-  "Passed Legislature": "#9C7A29",
-  "Signed into Law": "#3F6B4F",
+  Engrossed: "#9C7A29",
+  Enrolled: "#9C7A29",
+  "In Committee": "#9C7A29",
+  Passed: "#3F6B4F",
   Vetoed: "#8B3A3A",
   Failed: "#8B3A3A",
 };
@@ -244,7 +245,8 @@ function TriageButtons({ bill, onUpdate }) {
 }
 
 export default function BillCard({ bill, isStaff = false, onUpdate }) {
-  const statusColor = STATUS_COLORS[bill.status] || "#52616F";
+  const stage = bill.stage || bill.status;
+  const statusColor = STATUS_COLORS[stage] || "#52616F";
   const date = formatDate(bill.lastActionDate);
   const showDescription = bill.description && bill.description !== bill.title;
   const onWatchlist = bill.watchlistStatus === "watch";
@@ -262,7 +264,7 @@ export default function BillCard({ bill, isStaff = false, onUpdate }) {
             className="font-data text-xs uppercase tracking-wide px-2 py-0.5 border whitespace-nowrap"
             style={{ color: statusColor, borderColor: statusColor }}
           >
-            {bill.status}
+            {stage}
           </span>
         </div>
       </div>
@@ -276,6 +278,17 @@ export default function BillCard({ bill, isStaff = false, onUpdate }) {
         )}
       </h3>
       {showDescription && <p className="text-sm text-[#3A4653] mb-3">{bill.description}</p>}
+      {stage === "In Committee" && bill.committeeName && (
+        <p className="text-sm text-[#52616F] mb-1">
+          <span className={LABEL}>Committee: </span>
+          {bill.committeeName}
+        </p>
+      )}
+      {bill.diedAtSessionEnd && (
+        <p className="text-sm text-[#8B3A3A] mb-1">
+          Died when the session ended (last LegiScan status: {bill.status})
+        </p>
+      )}
       {bill.lastAction && (
         <p className="text-sm text-[#52616F] mb-3">
           <span className={LABEL}>Last action: </span>

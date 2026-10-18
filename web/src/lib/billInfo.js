@@ -1,11 +1,42 @@
-// LegiScan stores bill status as a number. These are the plain-English labels.
+// LegiScan stores bill status as a number. These are LegiScan's exact names.
 export const STATUS_LABELS = {
   1: 'Introduced',
-  2: 'Passed One Chamber',
-  3: 'Passed Legislature',
-  4: 'Signed into Law',
+  2: 'Engrossed',
+  3: 'Enrolled',
+  4: 'Passed',
   5: 'Vetoed',
   6: 'Failed',
+}
+
+// The sections the watchlist is split into, in order. Every section except
+// "In Committee" is a LegiScan status. "In Committee" uses LegiScan's
+// current-committee field for bills that are Introduced or Engrossed.
+export const STATUS_GROUPS = [
+  { label: 'Passed', note: 'Signed into law or otherwise enacted' },
+  { label: 'Enrolled', note: 'Passed both chambers, sent to the Governor' },
+  { label: 'In Committee', note: 'Currently assigned to a committee' },
+  { label: 'Engrossed', note: 'Passed its first chamber, awaiting action in the second' },
+  { label: 'Introduced', note: 'Introduced, awaiting action in its first chamber' },
+  { label: 'Vetoed', note: 'Vetoed by the Governor' },
+  { label: 'Failed', note: 'Did not pass, including bills still pending when the session ended' },
+  { label: 'Unknown', note: 'No status reported by LegiScan yet' },
+]
+
+// Statuses that mean a bill was still moving through the legislature
+const STILL_MOVING = ['Introduced', 'Engrossed']
+
+// Which watchlist section a bill belongs in.
+//  - Introduced/Engrossed bills in a session that has adjourned -> Failed
+//  - Introduced/Engrossed bills sitting in a committee -> In Committee
+//  - everything else -> its LegiScan status
+// (Enrolled bills stay Enrolled after adjournment, since the Governor can
+//  still sign them.)
+export function billStage(status, { sessionEnded, inCommittee }) {
+  if (STILL_MOVING.includes(status)) {
+    if (sessionEnded) return 'Failed'
+    if (inCommittee) return 'In Committee'
+  }
+  return status
 }
 
 export function statusLabel(status) {
